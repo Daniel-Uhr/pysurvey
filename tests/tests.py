@@ -1,8 +1,8 @@
 import unittest
 import pandas as pd
 import numpy as np
-from design import SurveyDesign
-from statistics import (
+from pysurvey.design import SurveyDesign
+from pysurvey.statistics import (
     svymean, svytotal, svyquantile, svyvar, svychisq, svyttest,
     svyratio, svyciprop, svyby
 )
