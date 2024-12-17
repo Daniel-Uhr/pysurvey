@@ -2,7 +2,10 @@ import unittest
 import pandas as pd
 import numpy as np
 from design import SurveyDesign
-from statistics import svymean, svytotal, svyquantile, svyvar, svychisq, svyttest
+from statistics import (
+    svymean, svytotal, svyquantile, svyvar, svychisq, svyttest,
+    svyratio, svyciprop, svyby
+)
 
 
 class TestSurveyDesign(unittest.TestCase):
@@ -50,7 +53,7 @@ class TestSurveyDesign(unittest.TestCase):
 
 class TestStatisticsFunctions(unittest.TestCase):
     """
-    Test cases for the statistics functions: svymean, svytotal, svyquantile, svyvar, svychisq, and svyttest.
+    Test cases for the statistics functions: svymean, svytotal, svyquantile, svyvar, svychisq, svyttest, svyratio, svyciprop, and svyby.
     """
     
     def setUp(self):
@@ -58,7 +61,9 @@ class TestStatisticsFunctions(unittest.TestCase):
         self.data = pd.DataFrame({
             'x': [10, 20, 30, 40, 50],
             'y': [5, 15, 25, 35, 45],
-            'group': [1, 1, 1, 2, 2]
+            'group': [1, 1, 1, 2, 2],
+            'denominator': [2, 4, 6, 8, 10],
+            'binary': [0, 1, 1, 0, 1]
         })
         self.weights = pd.Series([1, 2, 3, 4, 5])
 
@@ -89,7 +94,7 @@ class TestStatisticsFunctions(unittest.TestCase):
 
     def test_svychisq(self):
         """Test svychisq function."""
-        chisq_result = svychisq(self.data, self.weights, 'group', 'x')
+        chisq_result = svychisq(self.data, self.weights, 'group', 'binary')
         self.assertIsInstance(chisq_result, dict)
         self.assertIn('chisq', chisq_result)
         self.assertIn('p_value', chisq_result)
@@ -105,6 +110,29 @@ class TestStatisticsFunctions(unittest.TestCase):
         self.assertGreaterEqual(ttest_result['p_value'], 0.0)
         self.assertLessEqual(ttest_result['p_value'], 1.0)
 
+    def test_svyratio(self):
+        """Test svyratio function."""
+        ratio_result = svyratio(self.data, self.weights, 'x', 'denominator')
+        expected_ratio = np.sum(self.data['x'] * self.weights) / np.sum(self.data['denominator'] * self.weights)
+        self.assertAlmostEqual(ratio_result['ratio'], expected_ratio)
+
+    def test_svyciprop(self):
+        """Test svyciprop function."""
+        ciprop_result = svyciprop(self.data, self.weights, 'binary')
+        self.assertIn('proportion', ciprop_result)
+        self.assertIn('ci_lower', ciprop_result)
+        self.assertIn('ci_upper', ciprop_result)
+        self.assertGreaterEqual(ciprop_result['proportion'], 0.0)
+        self.assertLessEqual(ciprop_result['proportion'], 1.0)
+
+    def test_svyby(self):
+        """Test svyby function."""
+        by_result = svyby(self.data, self.weights, 'group', lambda d, w: svymean(d, w, 'x'))
+        self.assertIsInstance(by_result, dict)
+        for group, result in by_result.items():
+            self.assertIn('x', result)
+
 
 if __name__ == '__main__':
     unittest.main()
+
