@@ -137,3 +137,7 @@ def svyby(data, weights, group, func):
     """Apply a weighted function to subgroups."""
     return {name: func(subgroup, weights.loc[subgroup.index]) for name, subgroup in data.groupby(group)}
 
+__all__ = [
+    "svymean", "svytotal", "svyquantile", "svyvar", "svychisq", "svyttest",
+    "svyratio", "svyciprop", "svyby", "svyglm"
+]
