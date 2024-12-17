@@ -1,47 +1,73 @@
 import numpy as np
 import pandas as pd
-from scipy.stats import norm, chi2, t
-import statsmodels.api as sm
+from statsmodels.api import GLM, families
+from statsmodels.tools.tools import add_constant
+from scipy.stats import t
 
-def svyglm(formula, data, weights, family='gaussian'):
+def svyglm(formula, data, weights, strata=None, psu=None, family='gaussian', replicates=50):
     """
-    Fit a Generalized Linear Model (GLM) with survey weights.
+    Fit a Generalized Linear Model (GLM) with survey weights and replication-based variance.
 
     Parameters:
-        formula (str): A patsy-style formula defining the model.
-        data (DataFrame): The dataset containing the variables.
+        formula (str): Patsy formula for the GLM.
+        data (DataFrame): Dataset with variables.
         weights (array-like): Survey weights.
-        family (str): Distribution family ('gaussian', 'binomial', 'poisson', 'gamma').
+        strata (str, optional): Column name for strata.
+        psu (str, optional): Column name for primary sampling units (clusters).
+        family (str): Distribution family ('gaussian', 'binomial', 'poisson', etc.).
+        replicates (int): Number of bootstrap replicate weights.
 
     Returns:
-        dict: Summary including coefficients, standard errors, z-statistics, and p-values.
+        dict: Summary of model including coefficients, variance estimates, and adjusted errors.
     """
-    # Map family strings to statsmodels families
+    import patsy  # Required for parsing formulas
+
+    # Map family names
     families_map = {
-        'gaussian': sm.families.Gaussian(),
-        'binomial': sm.families.Binomial(),
-        'poisson': sm.families.Poisson(),
-        'gamma': sm.families.Gamma()
+        'gaussian': families.Gaussian(),
+        'binomial': families.Binomial(),
+        'poisson': families.Poisson(),
+        'gamma': families.Gamma()
     }
-
     if family not in families_map:
-        raise ValueError(f"Unsupported family: {family}. Supported families: {list(families_map.keys())}")
+        raise ValueError(f"Unsupported family: {family}. Supported: {list(families_map.keys())}")
 
-    # Fit the GLM model
-    model = sm.GLM.from_formula(formula, data=data, freq_weights=weights, family=families_map[family])
+    # Parse the formula
+    y, X = patsy.dmatrices(formula, data, return_type='dataframe')
+
+    # Add weights
+    W = np.array(weights)
+
+    # Fit the base model
+    model = GLM(y, X, family=families_map[family], freq_weights=W)
     results = model.fit()
 
-    # Prepare model summary
+    # Bootstrap for variance estimation
+    coef_boot = []
+    for i in range(replicates):
+        sampled_indices = np.random.choice(data.index, size=len(data), replace=True)
+        y_sample = y.iloc[sampled_indices]
+        X_sample = X.iloc[sampled_indices]
+        W_sample = W[sampled_indices]
+
+        model_boot = GLM(y_sample, X_sample, family=families_map[family], freq_weights=W_sample)
+        results_boot = model_boot.fit()
+        coef_boot.append(results_boot.params)
+
+    # Calculate bootstrap standard errors
+    coef_boot = np.vstack(coef_boot)
+    se_boot = coef_boot.std(axis=0)
+
+    # Prepare results
     summary = {
         'coefficients': results.params.to_dict(),
-        'standard_errors': results.bse.to_dict(),
-        'z_statistics': results.tvalues.to_dict(),
-        'p_values': results.pvalues.to_dict(),
-        'deviance': results.deviance,
-        'null_deviance': results.null_deviance,
+        'bootstrap_se': dict(zip(X.columns, se_boot)),
+        'z_statistics': dict(zip(X.columns, results.params / se_boot)),
+        'p_values': dict(zip(X.columns, 2 * (1 - t.cdf(np.abs(results.params / se_boot), df=replicates-1)))),
         'aic': results.aic
     }
     return summary
+
 
 
 def svymean(data, weights, variables):
