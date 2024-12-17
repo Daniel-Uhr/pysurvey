@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 import numpy as np
 from design import SurveyDesign
-from statistics import svymean, svytotal, svyquantile, svyvar
+from statistics import svymean, svytotal, svyquantile, svyvar, svychisq, svyttest
 
 
 class TestSurveyDesign(unittest.TestCase):
@@ -17,7 +17,8 @@ class TestSurveyDesign(unittest.TestCase):
             'strata': ['A', 'A', 'B', 'B', 'C', 'C'],
             'weight': [1.5, 1.5, 2.0, 2.0, 3.0, 3.0],
             'x': [10, 20, 30, 40, 50, 60],
-            'y': [5, 15, 25, 35, 45, 55]
+            'y': [5, 15, 25, 35, 45, 55],
+            'group': [1, 1, 1, 2, 2, 2]
         })
         self.survey = SurveyDesign(
             data=self.data,
@@ -49,14 +50,15 @@ class TestSurveyDesign(unittest.TestCase):
 
 class TestStatisticsFunctions(unittest.TestCase):
     """
-    Test cases for the statistics functions: svymean, svytotal, svyquantile, and svyvar.
+    Test cases for the statistics functions: svymean, svytotal, svyquantile, svyvar, svychisq, and svyttest.
     """
     
     def setUp(self):
         """Set up test data for statistics functions."""
         self.data = pd.DataFrame({
             'x': [10, 20, 30, 40, 50],
-            'y': [5, 15, 25, 35, 45]
+            'y': [5, 15, 25, 35, 45],
+            'group': [1, 1, 1, 2, 2]
         })
         self.weights = pd.Series([1, 2, 3, 4, 5])
 
@@ -84,6 +86,24 @@ class TestStatisticsFunctions(unittest.TestCase):
         mean_x = np.average(self.data['x'], weights=self.weights)
         expected_var_x = np.average((self.data['x'] - mean_x) ** 2, weights=self.weights)
         self.assertAlmostEqual(variances['x'], expected_var_x)
+
+    def test_svychisq(self):
+        """Test svychisq function."""
+        chisq_result = svychisq(self.data, self.weights, 'group', 'x')
+        self.assertIsInstance(chisq_result, dict)
+        self.assertIn('chisq', chisq_result)
+        self.assertIn('p_value', chisq_result)
+        self.assertGreaterEqual(chisq_result['p_value'], 0.0)
+        self.assertLessEqual(chisq_result['p_value'], 1.0)
+
+    def test_svyttest(self):
+        """Test svyttest function."""
+        ttest_result = svyttest(self.data, self.weights, 'x', 'group')
+        self.assertIsInstance(ttest_result, dict)
+        self.assertIn('t_statistic', ttest_result)
+        self.assertIn('p_value', ttest_result)
+        self.assertGreaterEqual(ttest_result['p_value'], 0.0)
+        self.assertLessEqual(ttest_result['p_value'], 1.0)
 
 
 if __name__ == '__main__':
