@@ -4,8 +4,9 @@ import numpy as np
 from pysurvey.design import SurveyDesign
 from pysurvey.statistics import (
     svymean, svytotal, svyquantile, svyvar, svychisq, svyttest,
-    svyratio, svyciprop, svyby
+    svyratio, svyciprop, svyby, svyglm  # Adicione svyglm aqui
 )
+
 
 
 class TestSurveyDesign(unittest.TestCase):
