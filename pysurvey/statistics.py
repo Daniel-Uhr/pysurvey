@@ -2,6 +2,48 @@ import numpy as np
 import pandas as pd
 from scipy.stats import chi2, t
 from statsmodels.api import WLS, GLM, families
+import statsmodels.api as sm
+
+def svyglm(formula, data, weights, family='gaussian'):
+    """
+    Fit a Generalized Linear Model (GLM) with survey weights.
+
+    Parameters:
+        formula (str): A patsy-style formula defining the model.
+        data (DataFrame): The dataset containing the variables.
+        weights (array-like): Survey weights.
+        family (str): Distribution family ('gaussian', 'binomial', 'poisson', etc.).
+
+    Returns:
+        dict: A summary of the fitted GLM model including coefficients, standard errors, z-statistics, and p-values.
+    """
+    # Map family strings to statsmodels families
+    families = {
+        'gaussian': sm.families.Gaussian(),
+        'binomial': sm.families.Binomial(),
+        'poisson': sm.families.Poisson(),
+        'gamma': sm.families.Gamma()
+    }
+
+    if family not in families:
+        raise ValueError(f"Unsupported family: {family}. Supported families are: {list(families.keys())}")
+
+    # Fit the weighted GLM model
+    model = sm.GLM.from_formula(formula, data=data, freq_weights=weights, family=families[family])
+    results = model.fit()
+
+    # Extract model summary
+    summary = {
+        'coefficients': results.params.to_dict(),
+        'standard_errors': results.bse.to_dict(),
+        'z_statistics': results.tvalues.to_dict(),
+        'p_values': results.pvalues.to_dict(),
+        'deviance': results.deviance,
+        'null_deviance': results.null_deviance,
+        'aic': results.aic
+    }
+
+    return summary
 
 
 def svymean(data, weights, variables):
