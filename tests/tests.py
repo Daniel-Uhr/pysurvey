@@ -132,7 +132,8 @@ class TestStatisticsFunctions(unittest.TestCase):
         for group, result in by_result.items():
             self.assertIn('x', result)
 
-
 if __name__ == '__main__':
-    unittest.main()
+    import sys
+    unittest.main(argv=['first-arg-is-ignored'], exit=False)
+
 
