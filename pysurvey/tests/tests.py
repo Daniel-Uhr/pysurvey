@@ -134,6 +134,19 @@ class TestStatisticsFunctions(unittest.TestCase):
         for group, result in by_result.items():
             self.assertIn('x', result)
 
+    def test_svyglm(self):
+        """Test svyglm function."""
+        formula = 'y ~ x'  # Model: y ~ x
+        family = 'gaussian'
+        glm_result = svyglm(formula, self.data, self.weights, family=family)
+
+        self.assertIsInstance(glm_result, dict)
+        self.assertIn('coefficients', glm_result)
+        self.assertIn('standard_errors', glm_result)
+        self.assertIn('z_statistics', glm_result)
+        self.assertIn('p_values', glm_result)
+        print("GLM Results:", glm_result)
+
 
 if __name__ == '__main__':
     unittest.main()
