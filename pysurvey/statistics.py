@@ -1,8 +1,10 @@
 import numpy as np
 import pandas as pd
+from scipy.stats import norm
 from scipy.stats import chi2, t
 from statsmodels.api import WLS, GLM, families
 import statsmodels.api as sm
+
 
 def svyglm(formula, data, weights, family='gaussian'):
     """
@@ -175,17 +177,34 @@ def svyratio(data, weights, numerator, denominator):
     return {'ratio': ratio}
 
 
-def svyciprop(data, weights, variable, alpha=0.05):
+def svyciprop(data, weights, variable, confidence=0.95):
     """
-    Compute confidence intervals for weighted proportions.
+    Compute weighted proportions and confidence intervals for a binary variable.
+
+    Parameters:
+        data (DataFrame): The survey data.
+        weights (Series): The survey weights.
+        variable (str): The binary variable for which to compute the proportion.
+        confidence (float): Confidence level for the confidence interval.
+
+    Returns:
+        dict: Proportion and confidence interval (lower, upper).
     """
+    # Weighted proportion
     prop = np.average(data[variable], weights=weights)
-    n = len(data)
-    se = np.sqrt(prop * (1 - prop) / n)
-    z = t.ppf(1 - alpha / 2, df=n - 1)
-    lower = prop - z * se
-    upper = prop + z * se
-    return {'proportion': prop, 'ci_lower': lower, 'ci_upper': upper}
+    n_eff = np.sum(weights)**2 / np.sum(weights**2)  # Effective sample size
+    se = np.sqrt(prop * (1 - prop) / n_eff)
+
+    z = norm.ppf(1 - (1 - confidence) / 2)
+    ci_lower = max(0, prop - z * se)  # Ensure lower bound >= 0
+    ci_upper = min(1, prop + z * se)  # Ensure upper bound <= 1
+
+    return {
+        'proportion': prop,
+        'ci_lower': ci_lower,
+        'ci_upper': ci_upper
+    }
+
 
 
 def svyby(data, weights, group, func):
