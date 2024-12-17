@@ -121,36 +121,38 @@ def svyttest(data, weights, variable, group):
     return {'t_statistic': t_statistic, 'p_value': p_value}
 
 
-def svyglm(data, weights, formula, family="gaussian"):
+def svyratio(data, weights, numerator, denominator):
     """
-    Fit a Generalized Linear Model (GLM) with weights.
-
-    Parameters:
-    - data: pd.DataFrame
-        Input data.
-    - weights: pd.Series
-        Weights for the survey design.
-    - formula: str
-        Formula for the GLM in 'y ~ x1 + x2' format.
-    - family: str
-        Family for the GLM ('gaussian', 'binomial', 'poisson').
-
-    Returns:
-    - model: statsmodels GLMResults
-        Fitted GLM model.
+    Compute weighted ratio of two variables.
     """
-    from patsy import dmatrices
+    if numerator not in data.columns or denominator not in data.columns:
+        raise ValueError("Both numerator and denominator must be in the data.")
+    num = np.sum(data[numerator] * weights)
+    denom = np.sum(data[denominator] * weights)
+    ratio = num / denom
+    return {'ratio': ratio}
 
-    if family == "gaussian":
-        glm_family = families.Gaussian()
-    elif family == "binomial":
-        glm_family = families.Binomial()
-    elif family == "poisson":
-        glm_family = families.Poisson()
-    else:
-        raise ValueError("Unsupported family. Choose 'gaussian', 'binomial', or 'poisson'.")
 
-    y, X = dmatrices(formula, data, return_type='dataframe')
-    model = GLM(y, X, freq_weights=weights, family=glm_family).fit()
+def svyciprop(data, weights, variable, alpha=0.05):
+    """
+    Compute confidence intervals for weighted proportions.
+    """
+    prop = np.average(data[variable], weights=weights)
+    n = len(data)
+    se = np.sqrt(prop * (1 - prop) / n)
+    z = t.ppf(1 - alpha / 2, df=n - 1)
+    lower = prop - z * se
+    upper = prop + z * se
+    return {'proportion': prop, 'ci_lower': lower, 'ci_upper': upper}
 
-    return model
+
+def svyby(data, weights, group, func):
+    """
+    Apply a weighted function to subgroups.
+    """
+    grouped = data.groupby(group)
+    results = {}
+    for name, group_data in grouped:
+        group_weights = weights.loc[group_data.index]
+        results[name] = func(group_data, group_weights)
+    return results
