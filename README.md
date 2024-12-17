@@ -51,11 +51,11 @@ from pysurvey.design import SurveyDesign
 
 # Example dataset
 data = pd.DataFrame({
-    'id': [1, 2, 3, 4, 5],
-    'weight': [1.5, 2.0, 2.5, 3.0, 3.5],
-    'strata': ['A', 'A', 'B', 'B', 'C'],
-    'x': [10, 20, 30, 40, 50],
-    'y': [5, 15, 25, 35, 45]
+    'id': [1, 2, 3, 4],
+    'weight': [1.5, 2.0, 2.5, 3.0],
+    'strata': ['A', 'A', 'B', 'B'],
+    'x': [10, 20, 30, 40],
+    'y': [5, 15, 25, 35]
 })
 
 # Initialize Survey Design
@@ -105,7 +105,7 @@ ratio_result = svyratio(data, data['weight'], numerator='x', denominator='y')
 print("Weighted Ratio:", ratio_result)
 
 # Weighted Proportion with Confidence Interval
-data['binary'] = [0, 1, 1, 0, 1]
+data['binary'] = [0, 1, 1, 0]
 prop_result = svyciprop(data, data['weight'], 'binary')
 print("Weighted Proportion:", prop_result)
 ```
@@ -123,7 +123,7 @@ ratio_result = svyratio(data, data['weight'], numerator='x', denominator='y')
 print("Weighted Ratio:", ratio_result)
 
 # Weighted Proportion with Confidence Interval
-data['binary'] = [0, 1, 1, 0, 1]
+data['binary'] = [0, 1, 1, 0]
 prop_result = svyciprop(data, data['weight'], 'binary')
 print("Weighted Proportion:", prop_result)
 
