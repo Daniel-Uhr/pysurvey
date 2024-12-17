@@ -91,11 +91,11 @@ def svychisq(data, weights, group, variable):
 
     return {'chisq': chisq, 'p_value': p_value}
 
-
 def svyttest(data, weights, variable, group):
     """
     Perform weighted t-test for two groups.
     """
+    # Validação: Garantir exatamente dois grupos
     unique_groups = data[group].unique()
     if len(unique_groups) != 2:
         raise ValueError("Group variable must have exactly two unique values.")
