@@ -5,7 +5,6 @@ from scipy.stats import chi2, t
 from statsmodels.api import WLS, GLM, families
 import statsmodels.api as sm
 
-
 def svyglm(formula, data, weights, family='gaussian'):
     """
     Fit a Generalized Linear Model (GLM) with survey weights.
