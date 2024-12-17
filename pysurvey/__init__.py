@@ -6,6 +6,5 @@ from .statistics import (
     svyratio, svyciprop, svyby, svyglm
 )
 
-
 __version__ = "0.1.0"
 __author__ = "Daniel de Abreu Pereira Uhr"
